@@ -1,0 +1,12 @@
+---
+description: Data dependencies for the Sunline Ephem component.
+data_dependencies:
+  - name: Sun_Ephemeris
+    type: Ephemeris.T
+    description: Sun ephemeris state (position and velocity)
+  - name: Spacecraft_Position
+    type: Nav_Trans.T
+    description: Spacecraft translational navigation state
+  - name: Spacecraft_Attitude
+    type: Nav_Att.T
+    description: Spacecraft attitude navigation state
