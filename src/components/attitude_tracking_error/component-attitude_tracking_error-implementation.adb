@@ -6,6 +6,7 @@ with Nav_Att.C;
 with Att_Ref.C;
 with Att_Guid.C;
 with Packed_F32x3_Record.C;
+with Algorithm_Wrapper_Util;
 
 package body Component.Attitude_Tracking_Error.Implementation is
 
@@ -40,15 +41,7 @@ package body Component.Attitude_Tracking_Error.Implementation is
       use Nav_Att.C;
       use Data_Product_Enums;
       use Data_Product_Enums.Data_Dependency_Status;
-
-      function Is_Dep_Status_Success (Status : in Data_Product_Enums.Data_Dependency_Status.E) return Boolean is
-      begin
-         case Status is
-            when Success => return True;
-            when Not_Available | Stale => return False;
-            when Error => pragma Assert (False);
-         end case;
-      end Is_Dep_Status_Success;
+      use Algorithm_Wrapper_Util;
 
       -- Grab data dependencies:
       Ref : Att_Ref.T;
