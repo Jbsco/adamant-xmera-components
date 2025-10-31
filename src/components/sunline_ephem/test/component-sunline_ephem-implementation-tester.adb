@@ -1,8 +1,8 @@
 --------------------------------------------------------------------------------
--- Attitude_Tracking_Error Component Tester Body
+-- Sunline_Ephem Component Tester Body
 --------------------------------------------------------------------------------
 
-package body Component.Attitude_Tracking_Error.Implementation.Tester is
+package body Component.Sunline_Ephem.Implementation.Tester is
 
    ---------------------------------------
    -- Initialize heap variables:
@@ -14,7 +14,7 @@ package body Component.Attitude_Tracking_Error.Implementation.Tester is
       Self.Data_Product_Fetch_T_Service_History.Init (Depth => 100);
       Self.Data_Product_T_Recv_Sync_History.Init (Depth => 100);
       -- Data product histories:
-      Self.Attitude_Guidance_History.Init (Depth => 100);
+      Self.Sunline_Body_Frame_History.Init (Depth => 100);
    end Init_Base;
 
    procedure Final_Base (Self : in out Instance) is
@@ -24,7 +24,7 @@ package body Component.Attitude_Tracking_Error.Implementation.Tester is
       Self.Data_Product_Fetch_T_Service_History.Destroy;
       Self.Data_Product_T_Recv_Sync_History.Destroy;
       -- Data product histories:
-      Self.Attitude_Guidance_History.Destroy;
+      Self.Sunline_Body_Frame_History.Destroy;
    end Final_Base;
 
    ---------------------------------------
@@ -53,10 +53,12 @@ package body Component.Attitude_Tracking_Error.Implementation.Tester is
       -- Determine return data product ID:
       if Id_To_Return = 0 then
          case Arg.Id is
-            -- ID for Attitude_Reference:
+            -- ID for Sun_Ephemeris:
             when 0 => Id_To_Return := 0;
-            -- ID for Navigation_Attitude:
+            -- ID for Spacecraft_Position:
             when 1 => Id_To_Return := 1;
+            -- ID for Spacecraft_Attitude:
+            when 2 => Id_To_Return := 2;
             -- If ID can not be found, then return ID out of range error.
             when others =>
                if Return_Status = Data_Product_Enums.Fetch_Status.Success then
@@ -68,10 +70,12 @@ package body Component.Attitude_Tracking_Error.Implementation.Tester is
       -- Determine return data product length:
       if Length_To_Return = 0 then
          case Arg.Id is
-            -- Length for Attitude_Reference:
-            when 0 => Length_To_Return := Att_Ref.Size_In_Bytes;
-            -- Length for Navigation_Attitude:
-            when 1 => Length_To_Return := Nav_Att.Size_In_Bytes;
+            -- Length for Sun_Ephemeris:
+            when 0 => Length_To_Return := Ephemeris.Size_In_Bytes;
+            -- Length for Spacecraft_Position:
+            when 1 => Length_To_Return := Nav_Trans.Size_In_Bytes;
+            -- Length for Spacecraft_Attitude:
+            when 2 => Length_To_Return := Nav_Att.Size_In_Bytes;
             -- If ID can not be found, then return ID out of range error.
             when others =>
                if Return_Status = Data_Product_Enums.Fetch_Status.Success then
@@ -88,14 +92,18 @@ package body Component.Attitude_Tracking_Error.Implementation.Tester is
       -- Fill the data product buffer:
       if Return_Status = Data_Product_Enums.Fetch_Status.Success then
          case Arg.Id is
-            -- Length for Attitude_Reference:
+            -- Length for Sun_Ephemeris:
             when 0 =>
-               Buffer_To_Return (Buffer_To_Return'First .. Buffer_To_Return'First + Att_Ref.Size_In_Bytes - 1) :=
-                  Att_Ref.Serialization.To_Byte_Array (Self.Attitude_Reference);
-            -- Length for Navigation_Attitude:
+               Buffer_To_Return (Buffer_To_Return'First .. Buffer_To_Return'First + Ephemeris.Size_In_Bytes - 1) :=
+                  Ephemeris.Serialization.To_Byte_Array (Self.Sun_Ephemeris);
+            -- Length for Spacecraft_Position:
             when 1 =>
+               Buffer_To_Return (Buffer_To_Return'First .. Buffer_To_Return'First + Nav_Trans.Size_In_Bytes - 1) :=
+                  Nav_Trans.Serialization.To_Byte_Array (Self.Spacecraft_Position);
+            -- Length for Spacecraft_Attitude:
+            when 2 =>
                Buffer_To_Return (Buffer_To_Return'First .. Buffer_To_Return'First + Nav_Att.Size_In_Bytes - 1) :=
-                  Nav_Att.Serialization.To_Byte_Array (Self.Navigation_Attitude);
+                  Nav_Att.Serialization.To_Byte_Array (Self.Spacecraft_Attitude);
             -- Do not fill. The ID is not recognized.
             when others =>
                Return_Status := Data_Product_Enums.Fetch_Status.Id_Out_Of_Range;
@@ -141,11 +149,13 @@ package body Component.Attitude_Tracking_Error.Implementation.Tester is
    -- Data product handler primitive:
    -----------------------------------------------
    -- Description:
-   --    Data products for the Attitude Tracking Error component.
-   overriding procedure Attitude_Guidance (Self : in out Instance; Arg : in Att_Guid.T) is
+   --    Data products for the Sunline Ephem component.
+   -- Sunline direction vector in spacecraft body frame (stored in vehSunPntBdy
+   -- field).
+   overriding procedure Sunline_Body_Frame (Self : in out Instance; Arg : in Nav_Att.T) is
    begin
       -- Push the argument onto the test history for looking at later:
-      Self.Attitude_Guidance_History.Push (Arg);
-   end Attitude_Guidance;
+      Self.Sunline_Body_Frame_History.Push (Arg);
+   end Sunline_Body_Frame;
 
-end Component.Attitude_Tracking_Error.Implementation.Tester;
+end Component.Sunline_Ephem.Implementation.Tester;

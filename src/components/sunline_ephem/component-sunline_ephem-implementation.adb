@@ -1,30 +1,22 @@
 --------------------------------------------------------------------------------
--- Attitude_Tracking_Error Component Implementation Body
+-- Sunline_Ephem Component Implementation Body
 --------------------------------------------------------------------------------
 
 with Nav_Att.C;
-with Att_Ref.C;
-with Att_Guid.C;
-with Packed_F32x3_Record.C;
+with Nav_Trans.C;
+with Ephemeris.C;
 with Algorithm_Wrapper_Util;
 
-package body Component.Attitude_Tracking_Error.Implementation is
+package body Component.Sunline_Ephem.Implementation is
 
    --------------------------------------------------
    -- Subprogram for implementation init method:
    --------------------------------------------------
-   -- Initializes static configuration for algorithm.
+   -- Initializes the sunline ephemeris algorithm.
    overriding procedure Init (Self : in out Instance) is
    begin
       -- Allocate C++ class on the heap
       Self.Alg := Create;
-
-      -- TODO how should sigma_R0R actually be set?
-      declare
-         Sigma_Set : constant Packed_F32x3_Record.C.U_C := (Value => [0.01, 0.05, -0.55]);
-      begin
-         Set_Sigma_R0R (Self.Alg, Sigma_Set);
-      end;
    end Init;
 
    not overriding procedure Destroy (Self : in out Instance) is
@@ -38,42 +30,43 @@ package body Component.Attitude_Tracking_Error.Implementation is
    ---------------------------------------
    -- Run the algorithm up to the current time.
    overriding procedure Tick_T_Recv_Sync (Self : in out Instance; Arg : in Tick.T) is
-      use Nav_Att.C;
       use Data_Product_Enums;
       use Data_Product_Enums.Data_Dependency_Status;
       use Algorithm_Wrapper_Util;
 
       -- Grab data dependencies:
-      Ref : Att_Ref.T;
-      Ref_Status : constant Data_Dependency_Status.E :=
-         Self.Get_Attitude_Reference (Value => Ref, Stale_Reference => Arg.Time);
-      Nav : Nav_Att.T;
-      Nav_Status : constant Data_Dependency_Status.E :=
-         Self.Get_Navigation_Attitude (Value => Nav, Stale_Reference => Arg.Time);
+      Sun_Eph : Ephemeris.T;
+      Sun_Eph_Status : constant Data_Dependency_Status.E :=
+         Self.Get_Sun_Ephemeris (Value => Sun_Eph, Stale_Reference => Arg.Time);
+      Sc_Pos : Nav_Trans.T;
+      Sc_Pos_Status : constant Data_Dependency_Status.E :=
+         Self.Get_Spacecraft_Position (Value => Sc_Pos, Stale_Reference => Arg.Time);
+      Sc_Att : Nav_Att.T;
+      Sc_Att_Status : constant Data_Dependency_Status.E :=
+         Self.Get_Spacecraft_Attitude (Value => Sc_Att, Stale_Reference => Arg.Time);
    begin
-      if Is_Dep_Status_Success (Ref_Status) and then
-         Is_Dep_Status_Success (Nav_Status)
+      if Is_Dep_Status_Success (Sun_Eph_Status) and then
+         Is_Dep_Status_Success (Sc_Pos_Status) and then
+         Is_Dep_Status_Success (Sc_Att_Status)
       then
          -- Call algorithm:
          declare
-            Ref_C : aliased Att_Ref.C.U_C := Att_Ref.C.To_C (Att_Ref.Unpack (Ref));
-            Nav_C : aliased Nav_Att.C.U_C := Nav_Att.C.To_C (Nav_Att.Unpack (Nav));
-            Guid : constant Att_Guid.C.U_C := Update (
+            Sun_Eph_C : aliased Ephemeris.C.U_C := Ephemeris.C.To_C (Ephemeris.Unpack (Sun_Eph));
+            Sc_Pos_C : aliased Nav_Trans.C.U_C := Nav_Trans.C.To_C (Nav_Trans.Unpack (Sc_Pos));
+            Sc_Att_C : aliased Nav_Att.C.U_C := Nav_Att.C.To_C (Nav_Att.Unpack (Sc_Att));
+            Sunline : constant Nav_Att.C.U_C := Update (
                Self.Alg,
-               -- TODO, this is unused by algorithm, need to remove from C interface
-               Current_Sim_Nanos => 0,
-               Att_Ref_In => Ref_C'Unchecked_Access,
-               Att_Nav_In => Nav_C'Unchecked_Access
+               Sun_Pos => Sun_Eph_C'Unchecked_Access,
+               Sc_Pos => Sc_Pos_C'Unchecked_Access,
+               Sc_Att => Sc_Att_C'Unchecked_Access
             );
          begin
             -- Send out data product:
-            Self.Data_Product_T_Send (Self.Data_Products.Attitude_Guidance (
+            Self.Data_Product_T_Send (Self.Data_Products.Sunline_Body_Frame (
                Arg.Time,
-               Att_Guid.Pack (Att_Guid.C.To_Ada (Guid))
+               Nav_Att.Pack (Nav_Att.C.To_Ada (Sunline))
             ));
          end;
-      else
-         null; -- TODO, assert, throw event?
       end if;
    end Tick_T_Recv_Sync;
 
@@ -81,7 +74,7 @@ package body Component.Attitude_Tracking_Error.Implementation is
    -- Data dependency handlers:
    -----------------------------------------------
    -- Description:
-   --    Data dependencies for the Attitude Tracking Error component.
+   --    Data dependencies for the Sunline Ephem component.
    -- Invalid data dependency handler. This procedure is called when a data dependency's id or length are found to be invalid:
    overriding procedure Invalid_Data_Dependency (Self : in out Instance; Id : in Data_Product_Types.Data_Product_Id; Ret : in Data_Product_Return.T) is
       pragma Annotate (GNATSAS, Intentional, "subp always fails", "intentional assertion");
@@ -90,4 +83,4 @@ package body Component.Attitude_Tracking_Error.Implementation is
       pragma Assert (False);
    end Invalid_Data_Dependency;
 
-end Component.Attitude_Tracking_Error.Implementation;
+end Component.Sunline_Ephem.Implementation;

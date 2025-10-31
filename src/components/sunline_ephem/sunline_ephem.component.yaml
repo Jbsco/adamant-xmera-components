@@ -1,8 +1,8 @@
 ---
-description: Attitude tracking error algorithm.
+description: Sunline ephemeris algorithm computes the direction to the sun in the spacecraft body frame.
 execution: passive
 init:
-  description: Initializes static configuration for algorithm.
+  description: Initializes the sunline ephemeris algorithm.
 connectors:
   - description: Run the algorithm up to the current time.
     type: Tick.T

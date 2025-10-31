@@ -1,30 +1,30 @@
 --------------------------------------------------------------------------------
--- Attitude_Tracking_Error Component Implementation Spec
+-- Sunline_Ephem Component Implementation Spec
 --------------------------------------------------------------------------------
 
 -- Includes:
 with Tick;
-with Att_Tracking_Error_Algorithm_C;
-use Att_Tracking_Error_Algorithm_C;
+with Sunline_Ephem_Algorithm_C; use Sunline_Ephem_Algorithm_C;
 
--- Attitude tracking error algorithm.
-package Component.Attitude_Tracking_Error.Implementation is
+-- Sunline ephemeris algorithm computes the direction to the sun in the spacecraft
+-- body frame.
+package Component.Sunline_Ephem.Implementation is
 
    -- The component class instance record:
-   type Instance is new Attitude_Tracking_Error.Base_Instance with private;
+   type Instance is new Sunline_Ephem.Base_Instance with private;
 
    --------------------------------------------------
    -- Subprogram for implementation init method:
    --------------------------------------------------
-   -- Initializes static configuration for algorithm.
+   -- Initializes the sunline ephemeris algorithm.
    overriding procedure Init (Self : in out Instance);
    not overriding procedure Destroy (Self : in out Instance);
 
 private
 
    -- The component class instance record:
-   type Instance is new Attitude_Tracking_Error.Base_Instance with record
-      Alg : Att_Tracking_Error_Algorithm_Access := null;
+   type Instance is new Sunline_Ephem.Base_Instance with record
+      Alg : Sunline_Ephem_Algorithm_Access := null;
    end record;
 
    ---------------------------------------
@@ -55,7 +55,7 @@ private
    -- Data dependency primitives:
    -----------------------------------------------
    -- Description:
-   --    Data dependencies for the Attitude Tracking Error component.
+   --    Data dependencies for the Sunline Ephem component.
    -- Function which retrieves a data dependency.
    -- The default implementation is to simply call the Data_Product_Fetch_T_Request connector. Change the implementation if this component
    -- needs to do something different.
@@ -64,4 +64,4 @@ private
    -- Invalid data dependency handler. This procedure is called when a data dependency's id or length are found to be invalid:
    overriding procedure Invalid_Data_Dependency (Self : in out Instance; Id : in Data_Product_Types.Data_Product_Id; Ret : in Data_Product_Return.T);
 
-end Component.Attitude_Tracking_Error.Implementation;
+end Component.Sunline_Ephem.Implementation;

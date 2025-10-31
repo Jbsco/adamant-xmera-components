@@ -1,44 +1,47 @@
 --------------------------------------------------------------------------------
--- Attitude_Tracking_Error Component Tester Spec
+-- Sunline_Ephem Component Tester Spec
 --------------------------------------------------------------------------------
 
 -- Includes:
-with Component.Attitude_Tracking_Error_Reciprocal;
+with Component.Sunline_Ephem_Reciprocal;
 with Printable_History;
 with Data_Product_Return.Representation;
 with Data_Product_Fetch.Representation;
 with Data_Product.Representation;
-with Att_Ref;
-with Nav_Att;
 with Data_Product;
-with Att_Guid.Representation;
+with Nav_Att.Representation;
+with Ephemeris;
+with Nav_Trans;
+with Nav_Att;
 
--- Attitude tracking error algorithm.
-package Component.Attitude_Tracking_Error.Implementation.Tester is
+-- Sunline ephemeris algorithm computes the direction to the sun in the spacecraft
+-- body frame.
+package Component.Sunline_Ephem.Implementation.Tester is
 
-   use Component.Attitude_Tracking_Error_Reciprocal;
+   use Component.Sunline_Ephem_Reciprocal;
    -- Invoker connector history packages:
    package Data_Product_Fetch_T_Service_History_Package is new Printable_History (Data_Product_Fetch.T, Data_Product_Fetch.Representation.Image);
    package Data_Product_Fetch_T_Service_Return_History_Package is new Printable_History (Data_Product_Return.T, Data_Product_Return.Representation.Image);
    package Data_Product_T_Recv_Sync_History_Package is new Printable_History (Data_Product.T, Data_Product.Representation.Image);
 
    -- Data product history packages:
-   package Attitude_Guidance_History_Package is new Printable_History (Att_Guid.T, Att_Guid.Representation.Image);
+   package Sunline_Body_Frame_History_Package is new Printable_History (Nav_Att.T, Nav_Att.Representation.Image);
 
    -- Component class instance:
-   type Instance is new Component.Attitude_Tracking_Error_Reciprocal.Base_Instance with record
+   type Instance is new Component.Sunline_Ephem_Reciprocal.Base_Instance with record
       -- The component instance under test:
-      Component_Instance : aliased Component.Attitude_Tracking_Error.Implementation.Instance;
+      Component_Instance : aliased Component.Sunline_Ephem.Implementation.Instance;
       -- Connector histories:
       Data_Product_Fetch_T_Service_History : Data_Product_Fetch_T_Service_History_Package.Instance;
       Data_Product_T_Recv_Sync_History : Data_Product_T_Recv_Sync_History_Package.Instance;
       -- Data product histories:
-      Attitude_Guidance_History : Attitude_Guidance_History_Package.Instance;
+      Sunline_Body_Frame_History : Sunline_Body_Frame_History_Package.Instance;
       -- Data dependency return values. These can be set during unit test
       -- and will be returned to the component when a data dependency call
       -- is made.
-      Attitude_Reference : Att_Ref.T;
-      Navigation_Attitude : Nav_Att.T;
+      Sun_Ephemeris : Ephemeris.T;
+      Spacecraft_Position : Nav_Trans.T;
+      Spacecraft_Attitude : Nav_Att.T;
       -- The return status for the data dependency fetch. This can be set
       -- during unit test to return something other than Success.
       Data_Dependency_Return_Status_Override : Data_Product_Enums.Fetch_Status.E := Data_Product_Enums.Fetch_Status.Success;
@@ -79,7 +82,9 @@ package Component.Attitude_Tracking_Error.Implementation.Tester is
    -- Data product handler primitives:
    -----------------------------------------------
    -- Description:
-   --    Data products for the Attitude Tracking Error component.
-   overriding procedure Attitude_Guidance (Self : in out Instance; Arg : in Att_Guid.T);
+   --    Data products for the Sunline Ephem component.
+   -- Sunline direction vector in spacecraft body frame (stored in vehSunPntBdy
+   -- field).
+   overriding procedure Sunline_Body_Frame (Self : in out Instance; Arg : in Nav_Att.T);
 
-end Component.Attitude_Tracking_Error.Implementation.Tester;
+end Component.Sunline_Ephem.Implementation.Tester;
