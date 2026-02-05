@@ -1,0 +1,4 @@
+---
+description: Array of 120 AccPktData records (MAX_ACC_BUF_PKT = 120).
+type: Acc_Pkt_Data.T
+length: 120

@@ -1,0 +1,15 @@
+---
+#  /*! @brief Structure used to define accelerometer package data */
+#  typedef struct {
+#      uint64_t measTime;  //!< [Tick] Measurement time for accel
+#      float gyro_B[3];    //!< [r/s] Angular rate measurement from gyro
+#      float accel_B[3];   //!< [m/s2] Acceleration in platform frame
+#  } AccPktDataMsgF32Payload;
+fields:
+  - name: Meas_Time
+    type: Interfaces.Unsigned_64
+    format: U64
+  - name: Gyro_B
+    type: Packed_F32x3.T
+  - name: Accel_B
+    type: Packed_F32x3.T
