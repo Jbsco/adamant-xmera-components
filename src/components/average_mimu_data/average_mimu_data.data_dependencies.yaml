@@ -1,0 +1,6 @@
+---
+description: Data dependencies for the Average Mimu Data component.
+data_dependencies:
+  - name: Acc_Data
+    type: Acc_Data.T
+    description: Accelerometer buffer data containing timestamped gyro and acceleration measurements

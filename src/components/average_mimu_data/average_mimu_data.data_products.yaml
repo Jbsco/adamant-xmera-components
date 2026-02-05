@@ -1,0 +1,6 @@
+---
+description: Data products for the Average Mimu Data component.
+data_products:
+  - name: Imu_Body_Data
+    type: Imu_Sensor_Body.T
+    description: Averaged IMU sensor data (angular velocity and acceleration) in spacecraft body frame.
