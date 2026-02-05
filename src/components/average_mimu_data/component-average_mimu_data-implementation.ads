@@ -3,8 +3,9 @@
 --------------------------------------------------------------------------------
 
 -- Includes:
-with Tick;
+with Acc_Data;
 with Parameter_Update;
+with Average_Mimu_Data_Algorithm_C; use Average_Mimu_Data_Algorithm_C;
 
 -- Averages MIMU accelerometer and gyro data within a configurable time window and
 -- transforms to the spacecraft body frame.
@@ -18,12 +19,13 @@ package Component.Average_Mimu_Data.Implementation is
    --------------------------------------------------
    -- Initializes the AverageMimuData algorithm.
    overriding procedure Init (Self : in out Instance);
+   not overriding procedure Destroy (Self : in out Instance);
 
 private
 
    -- The component class instance record:
    type Instance is new Average_Mimu_Data.Base_Instance with record
-      null; -- TODO
+      Alg : Average_Mimu_Data_Algorithm_Access := null;
    end record;
 
    ---------------------------------------
@@ -41,8 +43,8 @@ private
    ---------------------------------------
    -- Invokee connector primitives:
    ---------------------------------------
-   -- Run the algorithm up to the current time.
-   overriding procedure Tick_T_Recv_Sync (Self : in out Instance; Arg : in Tick.T);
+   -- Receive accelerometer buffer data for averaging.
+   overriding procedure Acc_Data_T_Recv_Sync (Self : in out Instance; Arg : in Acc_Data.T);
    -- The parameter update connector.
    overriding procedure Parameter_Update_T_Modify (Self : in out Instance; Arg : in out Parameter_Update.T);
 
@@ -65,7 +67,7 @@ private
    -- something special needs to happen after a parameter update. Examples of this might be copying certain parameters to
    -- hardware registers, or performing other special functionality that only needs to be performed after parameters have
    -- been updated.
-   overriding procedure Update_Parameters_Action (Self : in out Instance) is null;
+   overriding procedure Update_Parameters_Action (Self : in out Instance);
    -- This function is called when the parameter operation type is "Validate". The default implementation of this
    -- subprogram in the implementation package is a function that returns "Valid". However, this function can, and should be
    -- overridden if something special needs to happen to further validate a parameter. Examples of this might be validation of
@@ -77,18 +79,5 @@ private
       Time_Delta : in Packed_F32.U;
       Dcm_Pltf_To_Bdy : in Packed_F32x9.U
    ) return Parameter_Validation_Status.E is (Parameter_Validation_Status.Valid);
-
-   -----------------------------------------------
-   -- Data dependency primitives:
-   -----------------------------------------------
-   -- Description:
-   --    Data dependencies for the Average Mimu Data component.
-   -- Function which retrieves a data dependency.
-   -- The default implementation is to simply call the Data_Product_Fetch_T_Request connector. Change the implementation if this component
-   -- needs to do something different.
-   overriding function Get_Data_Dependency (Self : in out Instance; Id : in Data_Product_Types.Data_Product_Id) return Data_Product_Return.T is (Self.Data_Product_Fetch_T_Request ((Id => Id)));
-
-   -- Invalid data dependency handler. This procedure is called when a data dependency's id or length are found to be invalid:
-   overriding procedure Invalid_Data_Dependency (Self : in out Instance; Id : in Data_Product_Types.Data_Product_Id; Ret : in Data_Product_Return.T);
 
 end Component.Average_Mimu_Data.Implementation;
