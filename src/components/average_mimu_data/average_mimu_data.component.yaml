@@ -4,8 +4,8 @@ execution: passive
 init:
   description: Initializes the AverageMimuData algorithm.
 connectors:
-  - description: Receive accelerometer buffer data for averaging.
-    type: Acc_Data.T
+  - description: Receive raw MIMU data packet for conversion, averaging, and body-frame transform.
+    type: Mimu_Raw_Packet.T
     kind: recv_sync
   - description: The system time is retrieved via this connector.
     return_type: Sys_Time.T

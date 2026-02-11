@@ -3,7 +3,7 @@
 --------------------------------------------------------------------------------
 
 -- Includes:
-with Acc_Data;
+with Mimu_Raw_Packet;
 with Parameter_Update;
 with Average_Mimu_Data_Algorithm_C; use Average_Mimu_Data_Algorithm_C;
 
@@ -43,8 +43,9 @@ private
    ---------------------------------------
    -- Invokee connector primitives:
    ---------------------------------------
-   -- Receive accelerometer buffer data for averaging.
-   overriding procedure Acc_Data_T_Recv_Sync (Self : in out Instance; Arg : in Acc_Data.T);
+   -- Receive raw MIMU data packet for conversion, averaging, and body-frame
+   -- transform.
+   overriding procedure Mimu_Raw_Packet_T_Recv_Sync (Self : in out Instance; Arg : in Mimu_Raw_Packet.T);
    -- The parameter update connector.
    overriding procedure Parameter_Update_T_Modify (Self : in out Instance; Arg : in out Parameter_Update.T);
 
