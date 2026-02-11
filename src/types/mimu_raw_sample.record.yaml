@@ -1,0 +1,13 @@
+---
+description: A single raw MIMU measurement sample containing merged gyro rates and accelerations as Integer_32 values, plus merge info.
+fields:
+  - name: Gyro_Rates
+    description: "Merged gyro rate measurements about each principle axis (Integer_32)."
+    type: Packed_I32x3.T
+  - name: Accelerations
+    description: "Merged acceleration measurements along each principle axis (Integer_32)."
+    type: Packed_I32x3.T
+  - name: Merge_Info
+    description: "Merging information describing the sensors usage."
+    type: Interfaces.Unsigned_16
+    format: U16

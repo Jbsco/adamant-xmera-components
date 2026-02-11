@@ -1,0 +1,4 @@
+---
+description: Array of 10 raw MIMU measurement samples.
+type: Mimu_Raw_Sample.T
+length: 10
