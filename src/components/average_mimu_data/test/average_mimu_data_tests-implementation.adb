@@ -2,8 +2,9 @@
 -- Average_Mimu_Data Tests Body
 --------------------------------------------------------------------------------
 
+with Interfaces; use Interfaces;
 with Basic_Assertions; use Basic_Assertions;
-with Acc_Data;
+with Mimu_Raw_Packet;
 with Imu_Sensor_Body;
 with Packed_F32x3.Assertion; use Packed_F32x3.Assertion;
 with Average_Mimu_Data_Parameters;
@@ -48,59 +49,75 @@ package body Average_Mimu_Data_Tests.Implementation is
       T : Component.Average_Mimu_Data.Implementation.Tester.Instance_Access renames Self.Tester;
       Params : Average_Mimu_Data_Parameters.Instance;
 
-      -- Uniform AccData: all 120 packets have the same gyro and accel values.
-      -- With timeDelta large enough, all packets are included in the average,
-      -- so the average equals the uniform value.
-      Uniform_Acc_Data : constant Acc_Data.T := (
-         Acc_Pkts => [others => (
-            Meas_Time => 1_000_000_000, -- 1 second in nanoseconds
-            Gyro_B => [1.0, 2.0, 3.0],
-            Accel_B => [4.0, 5.0, 6.0]
+      -- Uniform raw packet: all 10 samples have the same integer values.
+      -- With scale factor 1/1e6: 1_000_000 -> 1.0, etc.
+      -- Timestamp Seconds=1 so the 10 filled samples have measTime ~1s.
+      -- The 110 zero-filled Acc_Data slots (measTime=0) have age ~1.09s,
+      -- which is excluded by timeDelta=1.0.
+      Uniform_Raw_Packet : constant Mimu_Raw_Packet.T := (
+         Timestamp => (Seconds => 1, Subseconds => 0),
+         Samples => [others => (
+            Gyro_Rates => [1_000_000, 2_000_000, 3_000_000],
+            Accelerations => [4_000_000, 5_000_000, 6_000_000],
+            Merge_Info => 0
          )]
       );
 
-      -- Non-uniform AccData: first 60 packets zero, last 60 non-zero.
-      -- Average = (60*[0,0,0] + 60*[2,4,6]) / 120 = [1,2,3] for gyro
-      -- Average = (60*[0,0,0] + 60*[8,10,12]) / 120 = [4,5,6] for accel
-      Mixed_Acc_Data : constant Acc_Data.T := (
-         Acc_Pkts => [
-            0 .. 59 => (
-               Meas_Time => 1_000_000_000,
-               Gyro_B => [0.0, 0.0, 0.0],
-               Accel_B => [0.0, 0.0, 0.0]
+      -- Non-uniform raw packet with negative values: first 5 samples negative,
+      -- last 5 positive. Tests signed Integer_32-to-float conversion and
+      -- averaging across mixed signs.
+      -- After scale (1/1e6):
+      --   first 5 gyro = [-1, -2, -3], accel = [-4, -5, -6]
+      --   last 5 gyro = [3, 6, 9], accel = [12, 15, 18]
+      -- Average of 10: gyro = (5*[-1,-2,-3] + 5*[3,6,9]) / 10 = [1, 2, 3]
+      --               accel = (5*[-4,-5,-6] + 5*[12,15,18]) / 10 = [4, 5, 6]
+      Mixed_Raw_Packet : constant Mimu_Raw_Packet.T := (
+         Timestamp => (Seconds => 1, Subseconds => 0),
+         Samples => [
+            0 .. 4 => (
+               Gyro_Rates => [-1_000_000, -2_000_000, -3_000_000],
+               Accelerations => [-4_000_000, -5_000_000, -6_000_000],
+               Merge_Info => 0
             ),
-            60 .. 119 => (
-               Meas_Time => 1_000_000_000,
-               Gyro_B => [2.0, 4.0, 6.0],
-               Accel_B => [8.0, 10.0, 12.0]
+            5 .. 9 => (
+               Gyro_Rates => [3_000_000, 6_000_000, 9_000_000],
+               Accelerations => [12_000_000, 15_000_000, 18_000_000],
+               Merge_Info => 0
             )
          ]
       );
 
-      -- Time-filtered AccData: old packets at time=0ns, new at time=10s.
-      -- With timeDelta=5.0s, only new packets are included.
-      -- maxTimeTag = 10s, old: (10-0)*NANO2SEC = 10s >= 5s (excluded),
-      -- new: (10-10)*NANO2SEC = 0s < 5s (included).
-      Filtered_Acc_Data : constant Acc_Data.T := (
-         Acc_Pkts => [
-            0 .. 59 => (
-               Meas_Time => 0,
-               Gyro_B => [99.0, 99.0, 99.0],
-               Accel_B => [99.0, 99.0, 99.0]
+      -- Time-filtered raw packet: bogus values in samples 0-4, known values in 5-9.
+      -- With timeDelta=0.045 (45ms), per-sample timestamps are base + I*10ms:
+      --   maxTimeTag = base + 90ms
+      --   Sample I age = (9-I)*10ms; included when age*NANO2SEC < timeDelta.
+      --   Sample 4: age=50ms, 0.05 < 0.045 => NO (excluded)
+      --   Sample 5: age=40ms, 0.04 < 0.045 => YES (included)
+      --   Only samples 5-9 pass the time filter.
+      -- Average of samples 5-9: gyro=[1,2,3], accel=[4,5,6]
+      Filtered_Raw_Packet : constant Mimu_Raw_Packet.T := (
+         Timestamp => (Seconds => 1, Subseconds => 0),
+         Samples => [
+            0 .. 4 => (
+               Gyro_Rates => [99_000_000, 99_000_000, 99_000_000],
+               Accelerations => [99_000_000, 99_000_000, 99_000_000],
+               Merge_Info => 0
             ),
-            60 .. 119 => (
-               Meas_Time => 10_000_000_000,
-               Gyro_B => [1.0, 2.0, 3.0],
-               Accel_B => [4.0, 5.0, 6.0]
+            5 .. 9 => (
+               Gyro_Rates => [1_000_000, 2_000_000, 3_000_000],
+               Accelerations => [4_000_000, 5_000_000, 6_000_000],
+               Merge_Info => 0
             )
          ]
       );
    begin
       -----------------------------------------------------------------------
-      -- Set parameters: identity DCM, large time window
+      -- Set parameters: identity DCM, 1s time window
+      -- timeDelta=1.0 includes all 10 filled samples (age 0-90ms < 1.0s)
+      -- but excludes the 110 zero-filled slots (age ~1.09s >= 1.0s).
       -----------------------------------------------------------------------
       Parameter_Update_Status_Assert.Eq (T.Stage_Parameter (
-         Params.Time_Delta ((Value => 1.0e10))), Success);
+         Params.Time_Delta ((Value => 1.0))), Success);
       Parameter_Update_Status_Assert.Eq (T.Stage_Parameter (
          Params.Dcm_Pltf_To_Bdy ([
             1.0, 0.0, 0.0,
@@ -111,8 +128,9 @@ package body Average_Mimu_Data_Tests.Implementation is
 
       -----------------------------------------------------------------------
       -- Test Case 1: Identity DCM, uniform data - output equals input
+      -- All 10 samples: Integer [1M,2M,3M] -> Float [1,2,3] gyro
       -----------------------------------------------------------------------
-      T.Acc_Data_T_Send (Uniform_Acc_Data);
+      T.Mimu_Raw_Packet_T_Send (Uniform_Raw_Packet);
 
       Natural_Assert.Eq (T.Data_Product_T_Recv_Sync_History.Get_Count, 1);
       Natural_Assert.Eq (T.Imu_Body_Data_History.Get_Count, 1);
@@ -138,7 +156,7 @@ package body Average_Mimu_Data_Tests.Implementation is
          ])), Success);
       Parameter_Update_Status_Assert.Eq (T.Update_Parameters, Success);
 
-      T.Acc_Data_T_Send (Uniform_Acc_Data);
+      T.Mimu_Raw_Packet_T_Send (Uniform_Raw_Packet);
 
       Natural_Assert.Eq (T.Data_Product_T_Recv_Sync_History.Get_Count, 2);
       Natural_Assert.Eq (T.Imu_Body_Data_History.Get_Count, 2);
@@ -151,11 +169,11 @@ package body Average_Mimu_Data_Tests.Implementation is
       end;
 
       -----------------------------------------------------------------------
-      -- Test Case 3: Non-uniform data, identity DCM - tests averaging
-      -- First 60 pkts: gyro=[0,0,0], accel=[0,0,0]
-      -- Last 60 pkts: gyro=[2,4,6], accel=[8,10,12]
-      -- Average: gyro=[1,2,3], accel=[4,5,6]
-      -- Like Python test: validates averaging over varied packet data.
+      -- Test Case 3: Non-uniform data with negative values, identity DCM
+      -- Tests signed I32-to-float conversion and averaging across mixed signs.
+      -- First 5: gyro=[-1M,-2M,-3M] -> [-1,-2,-3]
+      -- Last 5: gyro=[3M,6M,9M] -> [3,6,9]
+      -- Average of 10: gyro=[1,2,3], accel=[4,5,6]
       -----------------------------------------------------------------------
       Parameter_Update_Status_Assert.Eq (T.Stage_Parameter (
          Params.Dcm_Pltf_To_Bdy ([
@@ -165,7 +183,7 @@ package body Average_Mimu_Data_Tests.Implementation is
          ])), Success);
       Parameter_Update_Status_Assert.Eq (T.Update_Parameters, Success);
 
-      T.Acc_Data_T_Send (Mixed_Acc_Data);
+      T.Mimu_Raw_Packet_T_Send (Mixed_Raw_Packet);
 
       Natural_Assert.Eq (T.Data_Product_T_Recv_Sync_History.Get_Count, 3);
       Natural_Assert.Eq (T.Imu_Body_Data_History.Get_Count, 3);
@@ -178,19 +196,22 @@ package body Average_Mimu_Data_Tests.Implementation is
       end;
 
       -----------------------------------------------------------------------
-      -- Test Case 4: Time filtering - small timeDelta excludes old packets
-      -- Old 60 pkts at time=0ns with bogus values [99,99,99]
-      -- New 60 pkts at time=10s with gyro=[1,2,3], accel=[4,5,6]
-      -- timeDelta=5.0s: maxTimeTag=10s
-      --   old: (10-0)*NANO2SEC = 10s >= 5s -> excluded
-      --   new: (10-10)*NANO2SEC = 0s < 5s -> included
-      -- Average of new packets only: gyro=[1,2,3], accel=[4,5,6]
+      -- Test Case 4: Time filtering within 10-sample packet
+      -- Samples 0-4: bogus values [99M,99M,99M]
+      -- Samples 5-9: gyro=[1M,2M,3M], accel=[4M,5M,6M]
+      -- timeDelta=0.045 (45ms), per-sample timestamps: base + I*10ms
+      --   maxTimeTag = base + 90ms
+      --   Sample I included when (9-I)*10ms * NANO2SEC < 0.045
+      --   Samples 0-4 excluded (ages 50-90ms), samples 5-9 included (ages 0-40ms)
+      -- Average of samples 5-9 only: gyro=[1,2,3], accel=[4,5,6]
+      -- Note: timeDelta=0.045 avoids exact boundary at 50ms where IEEE 754
+      -- float/double promotion in the C++ filter would include sample 4.
       -----------------------------------------------------------------------
       Parameter_Update_Status_Assert.Eq (T.Stage_Parameter (
-         Params.Time_Delta ((Value => 5.0))), Success);
+         Params.Time_Delta ((Value => 0.045))), Success);
       Parameter_Update_Status_Assert.Eq (T.Update_Parameters, Success);
 
-      T.Acc_Data_T_Send (Filtered_Acc_Data);
+      T.Mimu_Raw_Packet_T_Send (Filtered_Raw_Packet);
 
       Natural_Assert.Eq (T.Data_Product_T_Recv_Sync_History.Get_Count, 4);
       Natural_Assert.Eq (T.Imu_Body_Data_History.Get_Count, 4);
@@ -200,6 +221,39 @@ package body Average_Mimu_Data_Tests.Implementation is
       begin
          Packed_F32x3_Assert.Eq (Output.Ang_Vel_Body, [1.0, 2.0, 3.0], Epsilon => 0.0001);
          Packed_F32x3_Assert.Eq (Output.Accel_Body, [4.0, 5.0, 6.0], Epsilon => 0.0001);
+      end;
+
+      -----------------------------------------------------------------------
+      -- Test Case 5: Sequential invocations - verify no state leaks
+      -- The C++ algorithm's update() is const; each call should be
+      -- independent. Send the same uniform packet twice with identity DCM
+      -- and timeDelta=1.0 and confirm identical output each time.
+      -- Also exercises parameter change back from timeDelta=0.045 to 1.0.
+      -----------------------------------------------------------------------
+      Parameter_Update_Status_Assert.Eq (T.Stage_Parameter (
+         Params.Time_Delta ((Value => 1.0))), Success);
+      Parameter_Update_Status_Assert.Eq (T.Stage_Parameter (
+         Params.Dcm_Pltf_To_Bdy ([
+            1.0, 0.0, 0.0,
+            0.0, 1.0, 0.0,
+            0.0, 0.0, 1.0
+         ])), Success);
+      Parameter_Update_Status_Assert.Eq (T.Update_Parameters, Success);
+
+      T.Mimu_Raw_Packet_T_Send (Uniform_Raw_Packet);
+      T.Mimu_Raw_Packet_T_Send (Uniform_Raw_Packet);
+
+      Natural_Assert.Eq (T.Data_Product_T_Recv_Sync_History.Get_Count, 6);
+      Natural_Assert.Eq (T.Imu_Body_Data_History.Get_Count, 6);
+
+      declare
+         Output_5 : constant Imu_Sensor_Body.T := T.Imu_Body_Data_History.Get (5);
+         Output_6 : constant Imu_Sensor_Body.T := T.Imu_Body_Data_History.Get (6);
+      begin
+         Packed_F32x3_Assert.Eq (Output_5.Ang_Vel_Body, [1.0, 2.0, 3.0], Epsilon => 0.0001);
+         Packed_F32x3_Assert.Eq (Output_5.Accel_Body, [4.0, 5.0, 6.0], Epsilon => 0.0001);
+         Packed_F32x3_Assert.Eq (Output_6.Ang_Vel_Body, [1.0, 2.0, 3.0], Epsilon => 0.0001);
+         Packed_F32x3_Assert.Eq (Output_6.Accel_Body, [4.0, 5.0, 6.0], Epsilon => 0.0001);
       end;
    end Test;
 
