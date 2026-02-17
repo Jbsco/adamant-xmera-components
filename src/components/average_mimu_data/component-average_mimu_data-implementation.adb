@@ -2,6 +2,7 @@
 -- Average_Mimu_Data Component Implementation Body
 --------------------------------------------------------------------------------
 
+with Ada.Numerics;
 with Acc_Data;
 with Acc_Data.C;
 with Imu_Sensor_Body.C;
@@ -53,9 +54,12 @@ package body Component.Average_Mimu_Data.Implementation is
          -- The C++ averageMimuData algorithm expects physical units: gyro in [r/s]
          -- and accel in [m/s^2] as IEEE 754 floats. These scale factors convert
          -- from the DPU integer representation to physical units.
-         -- TODO: Obtain actual scale factors from MIMU ICD.
-         Gyro_Scale_Factor : constant Short_Float := 1.0 / 1_000_000.0;
-         Accel_Scale_Factor : constant Short_Float := 1.0 / 1_000_000.0;
+         -- ICD: gyro[deg/s] = dn * 4000/2147483647, then deg->rad
+         -- ICD: acc[m/s^2]  = dn * 160/2147483647
+         Gyro_Scale_Factor : constant Short_Float :=
+            (4_000.0 / 2_147_483_647.0) * (Ada.Numerics.Pi / 180.0);
+         Accel_Scale_Factor : constant Short_Float :=
+            160.0 / 2_147_483_647.0;
 
          -- Synthesize a base timestamp in nanoseconds from the packet's Sys_Time.
          -- Sys_Time subseconds field: 1 tick = 1/65536 s.
