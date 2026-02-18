@@ -37,8 +37,8 @@ package body Component.Average_Mimu_Data.Implementation is
       Self.Update_Parameters;
 
       declare
-         -- Unpack the incoming raw packet to access fields in native byte order:
-         Raw : constant Mimu_Raw_Packet.U := Mimu_Raw_Packet.Unpack (Arg);
+         -- Access fields directly on the packed .T argument. No Unpack needed
+         -- since packed records support field access via representation clauses.
 
          -- Build the 120-slot Acc_Data buffer expected by the C++ algorithm.
          -- Only the first 10 slots are filled from the MIMU packet; the
@@ -65,8 +65,8 @@ package body Component.Average_Mimu_Data.Implementation is
          -- Sys_Time subseconds field: 1 tick = 1/65536 s.
          -- Convert to nanoseconds: subseconds * 1e9 / 65536.
          Base_Time_Ns : constant Interfaces.Unsigned_64 :=
-            Interfaces.Unsigned_64 (Raw.Timestamp.Seconds) * 1_000_000_000 +
-            Interfaces.Unsigned_64 (Raw.Timestamp.Subseconds) * 1_000_000_000 / 65_536;
+            Interfaces.Unsigned_64 (Arg.Timestamp.Seconds) * 1_000_000_000 +
+            Interfaces.Unsigned_64 (Arg.Timestamp.Subseconds) * 1_000_000_000 / 65_536;
       begin
          -- Convert 10 MIMU samples to Acc_Pkt_Data format.
          for I in 0 .. 9 loop
@@ -76,15 +76,15 @@ package body Component.Average_Mimu_Data.Implementation is
 
             -- Scale Integer_32 measurements to Short_Float in physical units.
             Acc_Buffer.Acc_Pkts (I).Gyro_B := [
-               Short_Float (Raw.Samples (I).Gyro_Rates (0)) * Gyro_Scale_Factor,
-               Short_Float (Raw.Samples (I).Gyro_Rates (1)) * Gyro_Scale_Factor,
-               Short_Float (Raw.Samples (I).Gyro_Rates (2)) * Gyro_Scale_Factor
+               Short_Float (Arg.Samples (I).Merged_Gyro_Rates.X_Measurement) * Gyro_Scale_Factor,
+               Short_Float (Arg.Samples (I).Merged_Gyro_Rates.Y_Measurement) * Gyro_Scale_Factor,
+               Short_Float (Arg.Samples (I).Merged_Gyro_Rates.Z_Measurement) * Gyro_Scale_Factor
             ];
 
             Acc_Buffer.Acc_Pkts (I).Accel_B := [
-               Short_Float (Raw.Samples (I).Accelerations (0)) * Accel_Scale_Factor,
-               Short_Float (Raw.Samples (I).Accelerations (1)) * Accel_Scale_Factor,
-               Short_Float (Raw.Samples (I).Accelerations (2)) * Accel_Scale_Factor
+               Short_Float (Arg.Samples (I).Merged_Accelerations.X_Measurement) * Accel_Scale_Factor,
+               Short_Float (Arg.Samples (I).Merged_Accelerations.Y_Measurement) * Accel_Scale_Factor,
+               Short_Float (Arg.Samples (I).Merged_Accelerations.Z_Measurement) * Accel_Scale_Factor
             ];
          end loop;
 

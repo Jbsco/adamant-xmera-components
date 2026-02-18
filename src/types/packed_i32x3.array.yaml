@@ -1,5 +1,0 @@
----
-description: Packed 3 element vector of 32-bit signed integers.
-type: Interfaces.Integer_32
-format: I32
-length: 3

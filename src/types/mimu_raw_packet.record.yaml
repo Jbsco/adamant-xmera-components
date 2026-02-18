@@ -6,4 +6,4 @@ fields:
     type: Sys_Time.T
   - name: Samples
     description: "10 equally time-distributed raw MIMU measurement samples."
-    type: Mimu_Raw_Sample_10.T
+    type: Mimu_Data_Field_Sample_10.T

@@ -73,8 +73,8 @@ package body Average_Mimu_Data_Tests.Implementation is
       Uniform_Raw_Packet : constant Mimu_Raw_Packet.T := (
          Timestamp => (Seconds => 1, Subseconds => 0),
          Samples => [others => (
-            Gyro_Rates => [1_000_000, 2_000_000, 3_000_000],
-            Accelerations => [4_000_000, 5_000_000, 6_000_000],
+            Merged_Gyro_Rates => (X_Measurement => 1_000_000, Y_Measurement => 2_000_000, Z_Measurement => 3_000_000),
+            Merged_Accelerations => (X_Measurement => 4_000_000, Y_Measurement => 5_000_000, Z_Measurement => 6_000_000),
             Merge_Info => 0
          )]
       );
@@ -90,13 +90,13 @@ package body Average_Mimu_Data_Tests.Implementation is
          Timestamp => (Seconds => 1, Subseconds => 0),
          Samples => [
             0 .. 4 => (
-               Gyro_Rates => [-1_000_000, -2_000_000, -3_000_000],
-               Accelerations => [-4_000_000, -5_000_000, -6_000_000],
+               Merged_Gyro_Rates => (X_Measurement => -1_000_000, Y_Measurement => -2_000_000, Z_Measurement => -3_000_000),
+               Merged_Accelerations => (X_Measurement => -4_000_000, Y_Measurement => -5_000_000, Z_Measurement => -6_000_000),
                Merge_Info => 0
             ),
             5 .. 9 => (
-               Gyro_Rates => [3_000_000, 6_000_000, 9_000_000],
-               Accelerations => [12_000_000, 15_000_000, 18_000_000],
+               Merged_Gyro_Rates => (X_Measurement => 3_000_000, Y_Measurement => 6_000_000, Z_Measurement => 9_000_000),
+               Merged_Accelerations => (X_Measurement => 12_000_000, Y_Measurement => 15_000_000, Z_Measurement => 18_000_000),
                Merge_Info => 0
             )
          ]
@@ -114,13 +114,13 @@ package body Average_Mimu_Data_Tests.Implementation is
          Timestamp => (Seconds => 1, Subseconds => 0),
          Samples => [
             0 .. 4 => (
-               Gyro_Rates => [99_000_000, 99_000_000, 99_000_000],
-               Accelerations => [99_000_000, 99_000_000, 99_000_000],
+               Merged_Gyro_Rates => (X_Measurement => 99_000_000, Y_Measurement => 99_000_000, Z_Measurement => 99_000_000),
+               Merged_Accelerations => (X_Measurement => 99_000_000, Y_Measurement => 99_000_000, Z_Measurement => 99_000_000),
                Merge_Info => 0
             ),
             5 .. 9 => (
-               Gyro_Rates => [1_000_000, 2_000_000, 3_000_000],
-               Accelerations => [4_000_000, 5_000_000, 6_000_000],
+               Merged_Gyro_Rates => (X_Measurement => 1_000_000, Y_Measurement => 2_000_000, Z_Measurement => 3_000_000),
+               Merged_Accelerations => (X_Measurement => 4_000_000, Y_Measurement => 5_000_000, Z_Measurement => 6_000_000),
                Merge_Info => 0
             )
          ]
