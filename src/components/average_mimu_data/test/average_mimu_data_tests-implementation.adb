@@ -50,7 +50,7 @@ package body Average_Mimu_Data_Tests.Implementation is
       T : Component.Average_Mimu_Data.Implementation.Tester.Instance_Access renames Self.Tester;
       Params : Average_Mimu_Data_Parameters.Instance;
 
-      -- ICD conversion factors (must match component implementation):
+      -- ICD conversion factors (must match C shim scale factors):
       -- gyro[deg/s] = dn * 4000/2147483647, then deg->rad
       -- acc[m/s^2]  = dn * 160/2147483647
       Gyro_Scale : constant Short_Float :=
@@ -67,9 +67,9 @@ package body Average_Mimu_Data_Tests.Implementation is
 
       -- Uniform raw packet: all 10 samples have the same integer values.
       -- ICD scale: 1_000_000 -> G1, 2_000_000 -> G2, etc.
-      -- Timestamp Seconds=1 so the 10 filled samples have measTime ~1s.
-      -- The 110 zero-filled Acc_Data slots (measTime=0) have age ~1.09s,
-      -- which is excluded by timeDelta=1.0.
+      -- Timestamp Seconds=1 so the 10 samples have measTime ~1s.
+      -- The C shim zero-fills the remaining internal buffer slots (measTime=0)
+      -- with age ~1.09s, which is excluded by timeDelta=1.0.
       Uniform_Raw_Packet : constant Mimu_Raw_Packet.T := (
          Timestamp => (Seconds => 1, Subseconds => 0),
          Samples => [others => (

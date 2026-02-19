@@ -4,7 +4,7 @@ pragma Style_Checks (Off);
 pragma Warnings     (Off, "-gnatwu");
 
 with Interfaces.C;         use Interfaces; use Interfaces.C;
-with Acc_Data.C;
+with Mimu_Data_Field_Sample_10.C;
 with Imu_Sensor_Body.C;
 with Packed_F32x9_Record.C;
 
@@ -29,12 +29,14 @@ package Average_Mimu_Data_Algorithm_C is
           External_Name => "AverageMimuDataAlgorithm_destroy";
 
    --* @brief Run the update step to compute averaged MIMU data.
-   --* @param Self          The algorithm instance.
-   --* @param Acc_Data_In   Pointer to input accelerometer data message payload.
+   --* @param Self         The algorithm instance.
+   --* @param Base_Time_Ns Base timestamp in nanoseconds (first sample time).
+   --* @param Samples      Pointer to 10 raw MIMU measurement samples.
    --* @return Computed IMU sensor body output message.
    function Update
-     (Self        : Average_Mimu_Data_Algorithm_Access;
-      Acc_Data_In : Acc_Data.C.U_C_Access)
+     (Self         : Average_Mimu_Data_Algorithm_Access;
+      Base_Time_Ns : Unsigned_64;
+      Samples      : Mimu_Data_Field_Sample_10.C.U_C_Access)
      return Imu_Sensor_Body.C.U_C
      with Import       => True,
           Convention   => C,
