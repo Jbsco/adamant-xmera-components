@@ -5,6 +5,7 @@
 with Basic_Assertions; use Basic_Assertions;
 with Packed_F32x3;
 with Packed_F32x3.Assertion; use Packed_F32x3.Assertion;
+with Packed_F64x3;
 with Packed_F64x3.Assertion; use Packed_F64x3.Assertion;
 with Nav_Att;
 with Nav_Trans;
