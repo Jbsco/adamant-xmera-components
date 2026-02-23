@@ -145,14 +145,21 @@ package body Component.Nav_Aggregate.Implementation is
             Trans_2_C : constant Nav_Trans.C.U_C := Nav_Trans.C.To_C (Nav_Trans.Unpack (Trans_Msg_2));
             Trans_3_C : constant Nav_Trans.C.U_C := Nav_Trans.C.To_C (Nav_Trans.Unpack (Trans_Msg_3));
 
-            -- Create C arrays (the C function expects pointers to arrays)
-            -- The algorithm will index into these arrays based on the configured indices
-            -- Unfetched messages will have zero-initialized values
-            type Att_Array is array (0 .. 3) of aliased Nav_Att.C.U_C;
-            type Trans_Array is array (0 .. 3) of aliased Nav_Trans.C.U_C;
+            -- Zero-initialized C values for padding unused array entries
+            Zero_Att_C : constant Nav_Att.C.U_C := Nav_Att.C.To_C (Nav_Att.Unpack (
+               Nav_Att.Serialization.From_Byte_Array ([others => 0])));
+            Zero_Trans_C : constant Nav_Trans.C.U_C := Nav_Trans.C.To_C (Nav_Trans.Unpack (
+               Nav_Trans.Serialization.From_Byte_Array ([others => 0])));
 
-            Att_Msgs : Att_Array := [0 => Att_0_C, 1 => Att_1_C, 2 => Att_2_C, 3 => Att_3_C];
-            Trans_Msgs : Trans_Array := [0 => Trans_0_C, 1 => Trans_1_C, 2 => Trans_2_C, 3 => Trans_3_C];
+            -- Create C arrays sized to match MAX_AGG_NAV_MSG (10).
+            -- The C shim reads all MAX_AGG_NAV_MSG entries during conversion,
+            -- so the arrays must be fully sized to avoid a buffer overread.
+            -- Entries beyond index 3 are zero-initialized.
+            type Att_Array is array (0 .. MAX_AGG_NAV_MSG - 1) of aliased Nav_Att.C.U_C;
+            type Trans_Array is array (0 .. MAX_AGG_NAV_MSG - 1) of aliased Nav_Trans.C.U_C;
+
+            Att_Msgs : Att_Array := [0 => Att_0_C, 1 => Att_1_C, 2 => Att_2_C, 3 => Att_3_C, others => Zero_Att_C];
+            Trans_Msgs : Trans_Array := [0 => Trans_0_C, 1 => Trans_1_C, 2 => Trans_2_C, 3 => Trans_3_C, others => Zero_Trans_C];
 
             -- Call the C algorithm
             Output : constant Aggregate_Output := Update (
