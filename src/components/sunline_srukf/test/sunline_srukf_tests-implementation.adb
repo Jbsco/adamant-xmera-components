@@ -31,7 +31,6 @@ package body Sunline_Srukf_Tests.Implementation is
    overriding procedure Tear_Down_Test (Self : in out Instance) is
    begin
       -- Free component heap:
-      Self.Tester.Component_Instance.Destroy;
       Self.Tester.Final_Base;
    end Tear_Down_Test;
 

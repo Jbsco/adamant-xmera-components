@@ -24,40 +24,15 @@ package Sunline_Srukf_Algorithm_C is
    -- Runtime validation: ensure Ada constant matches C definition
    pragma Assert (Unsigned_32 (MAX_NUM_CSS) = Get_Max_Num_Css);
 
-   --* Opaque handle for a SunlineSRuKFAlgorithm instance.
-   type Sunline_Srukf_Algorithm is limited private;
-   type Sunline_Srukf_Algorithm_Access is access all Sunline_Srukf_Algorithm;
-
-   --* @brief Construct a new SunlineSRuKFAlgorithm.
-   function Create
-     return Sunline_Srukf_Algorithm_Access
-     with Import       => True,
-          Convention   => C,
-          External_Name => "SunlineSRuKFAlgorithm_create";
-
-   --* @brief Destroy a SunlineSRuKFAlgorithm.
-   procedure Destroy
-     (Self : Sunline_Srukf_Algorithm_Access)
-     with Import       => True,
-          Convention   => C,
-          External_Name => "SunlineSRuKFAlgorithm_destroy";
-
-   --* @brief Run the sunline SRuKF update step.
-   --* @param Self  The algorithm instance.
+   --* @brief Run the sunline SRuKF update step (stateless).
    --* @param Input Pointer to the input structure (read-only).
    --* @return The computed output.
    function Update_State
-     (Self  : Sunline_Srukf_Algorithm_Access;
-      Input : Sunline_Srukf_Input.C.U_C_Access)
+     (Input : Sunline_Srukf_Input.C.U_C_Access)
      return Sunline_Srukf_Output.C.U_C
      with Import       => True,
           Convention   => C,
           External_Name => "SunlineSRuKFAlgorithm_updateState";
-
-private
-
-   -- Private representation: opaque null record
-   type Sunline_Srukf_Algorithm is null record;
 
 end Sunline_Srukf_Algorithm_C;
 

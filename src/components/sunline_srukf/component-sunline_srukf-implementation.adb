@@ -5,6 +5,7 @@
 with Nav_Att.C;
 with Sunline_Srukf_Input.C;
 with Sunline_Srukf_Output.C;
+with Sunline_Srukf_Algorithm_C; use Sunline_Srukf_Algorithm_C;
 with Algorithm_Wrapper_Util;
 
 package body Component.Sunline_Srukf.Implementation is
@@ -14,16 +15,11 @@ package body Component.Sunline_Srukf.Implementation is
    --------------------------------------------------
    -- Initializes the sunline SRuKF algorithm.
    overriding procedure Init (Self : in out Instance) is
+      pragma Unreferenced (Self);
    begin
-      -- Allocate C++ class on the heap
-      Self.Alg := Create;
+      -- Stateless algorithm, nothing to initialize.
+      null;
    end Init;
-
-   not overriding procedure Destroy (Self : in out Instance) is
-   begin
-      -- Free the C++ heap data.
-      Destroy (Self.Alg);
-   end Destroy;
 
    ---------------------------------------
    -- Invokee connector primitives:
@@ -56,7 +52,6 @@ package body Component.Sunline_Srukf.Implementation is
 
             -- Call the C algorithm:
             Output_C : constant Sunline_Srukf_Output.C.U_C := Update_State (
-               Self.Alg,
                Input => Input_C'Unchecked_Access
             );
          begin
