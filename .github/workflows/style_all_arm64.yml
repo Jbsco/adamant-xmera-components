@@ -35,9 +35,13 @@ jobs:
           path: fp32-fsw-xmera
           ref: develop
 
-      - name: Clone Eigen 3.4.1 from GitLab
-        run: |
-          git clone --depth 1 --branch 3.4.1 https://gitlab.com/libeigen/eigen.git eigen
+      - name: Clone Eigen with freestanding support
+        uses: actions/checkout@v4
+        with:
+          set-safe-directory: true
+          repository: lasp/eigen
+          path: eigen
+          ref: feature/freestanding
 
       - name: Check all style
         run: |
