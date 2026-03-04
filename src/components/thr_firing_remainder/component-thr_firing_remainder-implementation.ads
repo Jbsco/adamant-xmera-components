@@ -19,6 +19,9 @@ package Component.Thr_Firing_Remainder.Implementation is
    -- Initializes the thruster firing remainder algorithm.
    overriding procedure Init (Self : in out Instance);
    not overriding procedure Destroy (Self : in out Instance);
+   not overriding procedure Configure_Thrusters (
+      Self   : in out Instance;
+      Config : access constant Thr_Firing_Remainder_Array_Config);
 
 private
 

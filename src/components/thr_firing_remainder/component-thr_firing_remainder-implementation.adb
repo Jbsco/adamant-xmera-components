@@ -29,6 +29,14 @@ package body Component.Thr_Firing_Remainder.Implementation is
       Destroy (Self.Alg);
    end Destroy;
 
+   not overriding procedure Configure_Thrusters (
+      Self   : in out Instance;
+      Config : access constant Thr_Firing_Remainder_Array_Config)
+   is
+   begin
+      Set_Thrusters (Self.Alg, Config);
+   end Configure_Thrusters;
+
    ---------------------------------------
    -- Invokee connector primitives:
    ---------------------------------------
