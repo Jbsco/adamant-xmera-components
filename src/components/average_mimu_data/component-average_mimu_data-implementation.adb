@@ -2,11 +2,23 @@
 -- Average_Mimu_Data Component Implementation Body
 --------------------------------------------------------------------------------
 
-with Mimu_Data_Field_Sample_10.C;
-with Imu_Sensor_Body.C;
+with Ada.Numerics;
+with Mimu_Data_Field_Sample_10;
+with Imu_Sensor_Body;
 with Packed_F32x9.C;
 
 package body Component.Average_Mimu_Data.Implementation is
+
+   -- ICD conversion factors for raw I32 to physical units:
+   Gyro_Scale  : constant Short_Float :=
+      (4_000.0 / 2_147_483_647.0) * (Ada.Numerics.Pi / 180.0);
+   Accel_Scale : constant Short_Float := 160.0 / 2_147_483_647.0;
+
+   -- Inter-sample period in nanoseconds (10 ms):
+   Sample_Period_Ns : constant Interfaces.Unsigned_64 := 10_000_000;
+
+   -- Number of raw samples per packet:
+   Num_Samples : constant := 10;
 
    --------------------------------------------------
    -- Subprogram for implementation init method:
@@ -39,19 +51,51 @@ package body Component.Average_Mimu_Data.Implementation is
             Interfaces.Unsigned_64 (Arg.Timestamp.Seconds) * 1_000_000_000 +
             Interfaces.Unsigned_64 (Arg.Timestamp.Subseconds) * 1_000_000_000 / 65_536;
 
-         -- Convert packed samples to C layout for the algorithm:
-         Samples_C : aliased Mimu_Data_Field_Sample_10.C.U_C :=
-            Mimu_Data_Field_Sample_10.C.Unpack (Arg.Samples);
-         Imu_Output : constant Imu_Sensor_Body.C.U_C := Update (
-            Self.Alg,
-            Base_Time_Ns => Base_Time_Ns,
-            Samples      => Samples_C'Unchecked_Access
+         -- Unpack samples to access individual I32 fields:
+         Samples : constant Mimu_Data_Field_Sample_10.U :=
+            Mimu_Data_Field_Sample_10.Unpack (Arg.Samples);
+
+         -- Build 120-element InputPktsData_c. Zero-initialized so unused
+         -- slots have measTime=0, which the time-window filter excludes.
+         Input : aliased Input_Pkts_Data_C := (
+            Meas_Time => [others => 0],
+            Gyro_P    => [others => [others => 0.0]],
+            Accel_P   => [others => [others => 0.0]]
          );
       begin
-         Self.Data_Product_T_Send (Self.Data_Products.Imu_Body_Data (
-            Self.Sys_Time_T_Get,
-            Imu_Sensor_Body.Pack (Imu_Sensor_Body.C.To_Ada (Imu_Output))
-         ));
+         -- Convert 10 raw I32 samples to float and pack into buffer:
+         for I in 0 .. Num_Samples - 1 loop
+            Input.Meas_Time (I) := Base_Time_Ns + Interfaces.Unsigned_64 (I) * Sample_Period_Ns;
+            Input.Gyro_P (I) := [
+               Short_Float (Samples (I).Merged_Gyro_Rates.X_Measurement) * Gyro_Scale,
+               Short_Float (Samples (I).Merged_Gyro_Rates.Y_Measurement) * Gyro_Scale,
+               Short_Float (Samples (I).Merged_Gyro_Rates.Z_Measurement) * Gyro_Scale
+            ];
+            Input.Accel_P (I) := [
+               Short_Float (Samples (I).Merged_Accelerations.X_Measurement) * Accel_Scale,
+               Short_Float (Samples (I).Merged_Accelerations.Y_Measurement) * Accel_Scale,
+               Short_Float (Samples (I).Merged_Accelerations.Z_Measurement) * Accel_Scale
+            ];
+         end loop;
+
+         declare
+            Output : constant Output_Average_Accel_Angle_Vel_C :=
+               Update (Self.Alg, Input'Unchecked_Access);
+         begin
+            Self.Data_Product_T_Send (Self.Data_Products.Imu_Body_Data (
+               Self.Sys_Time_T_Get,
+               Imu_Sensor_Body.Pack ((
+                  Dv_Frame_Body => [0.0, 0.0, 0.0],
+                  Accel_Body    => [Output.Accel_B (0),
+                                    Output.Accel_B (1),
+                                    Output.Accel_B (2)],
+                  Dr_Frame_Body => [0.0, 0.0, 0.0],
+                  Ang_Vel_Body  => [Output.Gyro_Omega_B (0),
+                                    Output.Gyro_Omega_B (1),
+                                    Output.Gyro_Omega_B (2)]
+               ))
+            ));
+         end;
       end;
    end Mimu_Raw_Packet_T_Recv_Sync;
 
@@ -70,8 +114,8 @@ package body Component.Average_Mimu_Data.Implementation is
    -- Apply parameter values to the C++ algorithm when parameters change.
    overriding procedure Update_Parameters_Action (Self : in out Instance) is
    begin
-      -- Set the averaging window time delta:
-      Set_Time_Delta (Self.Alg, Self.Time_Delta.Value);
+      -- Set the averaging window:
+      Set_Averaging_Window (Self.Alg, Self.Time_Delta.Value);
       -- Set the platform-to-body DCM:
       Set_Dcm_Pltf_To_Bdy (Self.Alg, (Value => Packed_F32x9.C.To_C (Self.Dcm_Pltf_To_Bdy)));
    end Update_Parameters_Action;
